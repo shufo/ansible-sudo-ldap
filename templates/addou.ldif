@@ -1,0 +1,13 @@
+dn: {{ ldap_suffix }}
+objectClass: dcObject
+objectClass: organization
+dc: {{ ldap_dc }}
+o: {{ ldap_dc }}
+
+dn: ou={{ ldap_users_ou }},{{ ldap_suffix }}
+objectClass: organizationalUnit
+ou: {{ ldap_users_ou }}
+
+dn: ou={{ ldap_group_ou }},{{ ldap_suffix }}
+objectClass: organizationalUnit
+ou: {{ ldap_group_ou }}

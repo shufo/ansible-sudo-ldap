@@ -1,0 +1,5 @@
+dn: {{ ldap_sudoers_base }}
+description: {{ ldap_sudoers_ou }}
+objectClass: organizationalUnit
+objectClass: top
+ou: {{ ldap_sudoers_ou }}

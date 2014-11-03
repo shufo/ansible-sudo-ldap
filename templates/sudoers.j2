@@ -1,0 +1,27 @@
+Cmnd_Alias FILE_READ = /bin/cat, /bin/more, /usr/bin/tail
+Cmnd_Alias SERVICE = /sbin/service
+Cmnd_Alias NETWORK_LOOKUP = /bin/ping, /bin/netstat, /usr/bin/nslookup
+Cmnd_Alias DELEGATING = /bin/chown, /bin/chmod, /bin/chgrp
+Defaults   !visiblepw
+Defaults    always_set_home
+Defaults    env_reset
+Defaults    env_keep="COLORS DISPLAY HOSTNAME HISTSIZE INPUTRC KDEDIR LS_COLORS"
+Defaults    env_keep+="MAIL PS1 PS2 QTDIR USERNAME LANG LC_ADDRESS LC_CTYPE"
+Defaults    env_keep+="LC_COLLATE LC_IDENTIFICATION LC_MEASUREMENT LC_MESSAGES"
+Defaults    env_keep+="LC_MONETARY LC_NAME LC_NUMERIC LC_PAPER LC_TELEPHONE"
+Defaults    env_keep+="LC_TIME LC_ALL LANGUAGE LINGUAS _XKB_CHARSET XAUTHORITY"
+Defaults    !root_sudo
+Defaults    !lecture
+Defaults    log_host
+Defaults    log_year
+Defaults    logfile=/var/log/sudo.log
+Defaults    ignore_dot
+Defaults    ignore_local_sudoers
+Defaults    timestamp_timeout=0
+Defaults    passprompt="Enter [%u]'s Password:"
+Defaults    badpass_message="The password is not corresponding. Try again."
+Defaults    insults
+Defaults    secure_path=/sbin:/bin:/usr/sbin:/usr/bin
+root	ALL=(ALL) 	ALL
+%{{ ldap_samplegroup_name }}       ALL=(ALL) FILE_READ
+%wheel ALL=NOPASSWD: ALL

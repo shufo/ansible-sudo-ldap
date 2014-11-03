@@ -1,0 +1,53 @@
+---
+- name: Ensure dependencies are installed
+  yum: name={{ item }} state=installed
+  with_items:
+    - openldap-clients 
+    - nss-pam-ldapd
+    - pam_ldap
+    - openssh-ldap
+    - authconfig
+
+- name: Ensure ldap userinformation is enabled
+  shell: /usr/sbin/authconfig --enableldap --update
+  register: result
+  changed_when: "'OK' in result.stdout"
+ 
+- name: Ensure ldap authentication is enabled
+  shell: /usr/sbin/authconfig --enableldapauth --update
+  register: result
+  changed_when: "'OK' in result.stdout"
+
+- name: Ensure mkhomedir module is enabled
+  shell: /usr/sbin/authconfig --enablemkhomedir --update
+  register: result
+  changed_when: "'OK' in result.stdout"
+
+- name: Ensure shadow password is enabled
+  shell: /usr/sbin/authconfig --enableshadow --update
+  register: result
+  changed_when: "'OK' in result.stdout"
+
+- name: Ensure local authorization is enabled
+  shell: /usr/sbin/authconfig --enablelocauthorize --update
+  register: result
+  changed_when: "'OK' in result.stdout"
+
+- name: Ensure ldap server is set
+  shell: /usr/sbin/authconfig --ldapserver={{ ldap_server_uri }} --update
+  register: result
+  changed_when: "'OK' in result.stdout"
+
+- name: Ensure ldap server basedn is set
+  shell: /usr/sbin/authconfig --ldapbasedn={{ ldap_suffix }} --update
+  register: result
+  changed_when: "'OK' in result.stdout"
+
+- name: Ensure sudo-ldap.conf is set
+  template: src=templates/sudo-ldap.conf.j2 dest=/etc/sudo-ldap.conf
+
+- name: Ensure sudo setting for nsswitch.conf is set
+  lineinfile: >
+    dest=/etc/nsswitch.conf 
+    regexp=^sudoers
+    line="sudoers:  ldap files"

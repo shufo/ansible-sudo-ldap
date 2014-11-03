@@ -1,0 +1,59 @@
+# スキーマファイル設定
+include /etc/openldap/schema/corba.schema
+include /etc/openldap/schema/core.schema
+include /etc/openldap/schema/cosine.schema
+include /etc/openldap/schema/duaconf.schema
+include /etc/openldap/schema/dyngroup.schema
+include /etc/openldap/schema/inetorgperson.schema
+include /etc/openldap/schema/java.schema
+include /etc/openldap/schema/misc.schema
+include /etc/openldap/schema/nis.schema
+include /etc/openldap/schema/openldap.schema
+include /etc/openldap/schema/ppolicy.schema
+include /etc/openldap/schema/collective.schema
+
+# 接続プロトコル
+allow bind_v2
+
+# 管理ファイル
+pidfile     /var/run/openldap/slapd.pid
+argsfile    /var/run/openldap/slapd.args
+
+# TLS設定
+#TLSCACertificatePath  /etc/openldap/ssl/cacert.pem
+#TLSCertificateFile    /etc/openldap/ssl/server.crt
+#TLSCertificateKeyFile /etc/openldap/ssl/server.key
+
+# userPasswordに関するアクセス権
+access to attrs=userPassword
+    by self write
+    by dn="{{ ldap_root_dn }}" write
+    by anonymous auth
+    by * none
+
+# その他の属性に対するアクセス権
+access to *
+    by self write
+    by dn="{{ ldap_root_dn }}" write
+    by * read
+
+# monitorデータベースに対するアクセス権
+database monitor
+access to *
+    by dn.exact="{{ ldap_root_dn }}" read
+    by * none
+
+# データベース設定
+database    bdb
+suffix      "{{ ldap_suffix }}"
+checkpoint  1024 15
+rootdn      "{{ ldap_root_dn }}"
+rootpw      {{ generated_root_password.stdout }}
+directory   {{ ldap_dir }}
+
+# indexの設定
+index objectClass                       eq,pres
+index ou,cn,mail,surname,givenname      eq,pres,sub
+index uidNumber,gidNumber,loginShell    eq,pres
+index uid,memberUid                     eq,pres,sub
+index nisMapName,nisMapEntry            eq,pres,sub

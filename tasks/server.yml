@@ -1,0 +1,116 @@
+---
+- name: Ensure openldap is installed
+  yum: name={{ item }} state=installed
+  with_items:
+    - openldap 
+    - openldap-servers 
+    - openldap-clients
+    - pam_ldap
+
+- name: Ensure ldap conf directory is present
+  file: path={{ ldap_dir }} state=directory
+
+- name: Ensure ldap conf directory is initialized
+  file: path=/etc/openldap/slapd.d/ state=absent
+
+- name: Ensure sample conf file is copied
+  shell: creates={{ ldap_dir }}/DB_CONFIG cp /usr/share/openldap-servers/DB_CONFIG.example {{ ldap_dir }}/DB_CONFIG
+
+- name: Ensure sample conf file is copied
+  shell: creates=/etc/openldap/slapd.conf cp /usr/share/openldap-servers/slapd.conf.obsolete /etc/openldap/slapd.conf
+
+- name: Ensure ldap directory permission is correct
+  file: path={{ ldap_dir }} owner=ldap group=ldap
+
+- name: Genrate ldap master password
+  shell: /usr/sbin/slappasswd -s {{ ldap_root_password }}
+  register: generated_root_password
+
+- name: Ensure slapd.conf is set
+  template: src=templates/slapd.conf.j2 dest=/etc/openldap/slapd.conf
+  changed_when: False
+
+- name: Get sudo version
+  shell: rpm -qi sudo | grep Version | awk '{print $3}'
+  register: sudo_version
+  changed_when: False
+
+- name: Ensure sudo schema is set
+  shell: creates=/etc/openldap/schema/sudo.schema cp /usr/share/doc/sudo-{{ sudo_version.stdout }}/schema.OpenLDAP /etc/openldap/schema/sudo.schema
+
+- name: Ensure sudo include statement is present
+  lineinfile: dest=/etc/openldap/slapd.conf regexp=^include\s\/etc\/openldap\/schema\/sudo\.schema line="include /etc/openldap/schema/sudo.schema"
+
+- name: Ensure openldap is started
+  service: name=slapd state=started enabled=yes
+
+- name: Genrate ldap sample user password
+  shell: /usr/sbin/slappasswd -s {{ ldap_sampleuser_password }}
+  register: generated_sampleuser_password
+  changed_when: False
+
+- name: Ensure ldif file is set
+  template: src=templates/{{ item }} dest=/tmp/{{ item }}
+  with_items:
+    - addou.ldif
+    - adduser.ldif
+    - addgroup.ldif
+    - sudoers_ou.ldif
+
+- name: list organization unit
+  shell: ldapsearch -D "{{ ldap_root_dn }}" -w {{ ldap_root_password }} -b "{{ ldap_suffix }}" "objectClass=organization"
+  register: ou_list
+  ignore_errors: yes
+  changed_when: False
+
+- name: Ensure organization unit is created
+  shell: ldapadd -D "{{ ldap_root_dn }}" -w {{ ldap_root_password }} -f /tmp/addou.ldif
+  when: ou_list.stdout.count("ou={{ ldap_users_ou }}") < 1  
+
+- name: list users
+  shell: ldapsearch -D "{{ ldap_root_dn }}" -w {{ ldap_root_password }} -b "{{ ldap_suffix }}" "objectClass=posixAccount"
+  register: user_list
+  ignore_errors: yes
+  changed_when: False
+
+- name: Ensure user is created
+  shell: ldapadd -D "{{ ldap_root_dn }}" -w {{ ldap_root_password }} -f /tmp/adduser.ldif
+  when: user_list.stdout.count("{{ ldap_sampleuser_name }}") < 1  
+
+- name: list groups
+  shell: ldapsearch -D "{{ ldap_root_dn }}" -w {{ ldap_root_password }} -b "{{ ldap_suffix }}" "objectClass=posixGroup"
+  register: group_list
+  ignore_errors: yes
+  changed_when: False
+
+- name: Ensure group is created
+  shell: ldapadd -D "{{ ldap_root_dn }}" -w {{ ldap_root_password }} -f /tmp/addgroup.ldif
+  when: group_list.stdout.count("{{ ldap_samplegroup_name }}") < 1  
+
+- name: list organization unit
+  shell: ldapsearch -D "{{ ldap_root_dn }}" -w {{ ldap_root_password }} -b "{{ ldap_suffix }}" "objectClass=organizationalUnit"
+  register: ou_list
+  ignore_errors: yes
+  changed_when: False
+
+- name: Ensure sudoers ou is created
+  shell: ldapadd -D "{{ ldap_root_dn }}" -w {{ ldap_root_password }} -f /tmp/sudoers_ou.ldif
+  when: ou_list.stdout.count("{{ ldap_sudoers_ou }}") < 1  
+
+- name: Ensure sudoers config is set
+  template: src=templates/sudoers.j2 dest=/etc/sudoers
+
+- name: export sudoers ldif file
+  shell: creates=/tmp/sudoers.ldif cat /etc/sudoers | perl /usr/share/doc/sudo-{{ sudo_version.stdout }}/sudoers2ldif > /tmp/sudoers.ldif
+  environment:
+    SUDOERS_BASE: "{{ ldap_sudoers_base }}"
+
+- name: list sudoers role
+  shell: ldapsearch -D "{{ ldap_root_dn }}" -w {{ ldap_root_password }} -b "{{ ldap_suffix }}" "objectClass=sudoRole"
+  register: sudoers_role
+  ignore_errors: yes
+  changed_when: False
+
+- name: Ensure sudoers ou is created
+  shell: ldapadd -D "{{ ldap_root_dn }}" -w {{ ldap_root_password }} -f /tmp/sudoers.ldif
+  when: sudoers_role.stdout.count("{{ ldap_sudoers_ou }}") < 1  

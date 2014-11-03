@@ -1,0 +1,10 @@
+dn: uid={{ ldap_sampleuser_name }},ou={{ ldap_users_ou}},{{ ldap_suffix }}
+objectClass: account
+objectClass: posixAccount
+uid: {{ ldap_sampleuser_name }}
+cn: {{ ldap_sampleuser_name }}
+userPassword: {{ generated_sampleuser_password.stdout }}
+loginShell: /bin/bash
+uidNumber: 1000
+gidNumber: 1000
+homeDirectory: /home/{{ ldap_sampleuser_name }}
