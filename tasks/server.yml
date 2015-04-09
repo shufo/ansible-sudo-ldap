@@ -18,6 +18,7 @@
 
 - name: Ensure sample conf file is copied
   shell: creates=/etc/openldap/slapd.conf cp /usr/share/openldap-servers/slapd.conf.obsolete /etc/openldap/slapd.conf
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "6"
 
 - name: Ensure ldap directory permission is correct
   file: path={{ ldap_dir }} owner=ldap group=ldap
