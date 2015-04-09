@@ -3,6 +3,10 @@ ansible-sudo-ldap
 
 A playbook for sudo administration with ldap server.
 
+## Requirements
+
+- Ansible (Tested on 1.8)
+
 ## Overview
 
 It will install OpenLDAP and sudo management settings. You can customize it by edit vars file.
